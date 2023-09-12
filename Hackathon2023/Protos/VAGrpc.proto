@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+option csharp_namespace = "Hackathon2023";
+
+package vaGrpc;
+
+import "google/protobuf/timestamp.proto";
+
+// Service definition.
+service VAGrpc {
+  // RPCs of the server 
+  rpc EchoMessage (ScanRequest) returns (ScanResults);
+  rpc ScanDatabase (ScanRequest) returns (ScanResults);
+  rpc ExecuteQuery (QueryRequest) returns (QueryReponse);
+}
+
+// SQL instance name and database name the client wants to scan.
+message ScanRequest {
+  string instanceName = 1;
+  string dbName = 2;
+}
+
+// The result of the scan on the SQL database.
+message ScanResults {
+  string scanSummary = 1;
+  google.protobuf.Timestamp timestamp = 2;
+}
+
+message QueryRequest {
+  string instanceName = 1;
+  string dbName = 2;
+  string query = 3;
+}
+
+message QueryReponse {
+  string queryResults = 1;
+  OperationReturnCode returnCode = 2;
+}
+
+enum OperationReturnCode {
+  SUCCESS = 0;
+  FAILURE = 1;
+  SERVER_BUSY = 2;
+}
