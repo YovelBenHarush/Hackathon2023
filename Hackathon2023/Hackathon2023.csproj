@@ -16,6 +16,8 @@
     </PackageReference>
     <PackageReference Include="Azure.AI.OpenAI" Version="1.0.0-beta.7" />
     <PackageReference Include="AI.Dev.OpenAI.GPT" Version="1.0.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Microsoft.SqlServer.Management.SqlParser" Version="170.9.0" />
   </ItemGroup>
 
     <ItemGroup>
