@@ -3,6 +3,7 @@ using Grpc.Net.Client;
 using Microsoft.DataSec.DspmForDatabases.Tools.HackathonScanEngineRunner;
 using Microsoft.SqlServer.Management.SqlParser.Parser;
 using Newtonsoft.Json;
+using System.CodeDom;
 using System.Text;
 
 namespace Hackathon2023
@@ -33,6 +34,13 @@ namespace Hackathon2023
             string? userRequest = null;
 
             Console.WriteLine("Starting...");
+
+            var schemas = await GetSchemas();
+
+            SchemasStr = StringifySchemas(schemas);
+
+            Console.WriteLine(SchemasStr);
+
             do
             {
                 do
@@ -42,10 +50,6 @@ namespace Hackathon2023
                     userRequest = Console.ReadLine();
                 }
                 while (userRequest == null);
-
-                var tableNames = await ExtractTableNames(userRequest);
-
-                var schemas = await GetSchemasForTables(tableNames);
 
                 var query = await BuildQuery(schemas, userRequest);
 
@@ -66,7 +70,7 @@ namespace Hackathon2023
 
         private async Task<List<string>> ExtractTableNames(string userRequest)
         {
-            var request = $"Please return a json valid list of SQL table names mentioned in the following user request (return only the list and no further words): {userRequest}";
+            var request = @$"Please return a json valid list of SQL table names mentioned in the following user request (return only the list and no further words): {userRequest}";
 
             var completions = await _aiClient.GetChatCompletionsAsync(new List<(ChatRole Role, string Message)> { (ChatRole.User, request) }, default);
 
@@ -112,12 +116,14 @@ namespace Hackathon2023
             {
                 var schemaQuery = @$"SELECT COLUMN_NAME AS columnName, DATA_TYPE AS columnType
                     FROM INFORMATION_SCHEMA.COLUMNS WITH(NOLOCK)
-                    WHERE TABLE_CATALOG = {_dbName} AND TABLE_NAME = {tableName}";
+                    WHERE TABLE_NAME LIKE '%{tableName}%'";
+
+                Console.WriteLine(schemaQuery);
 
                 var reply = await _grpcClient.ExecuteQueryAsync(
                                    new QueryRequest { InstanceName = _instanceName, DbName = _dbName, Query = schemaQuery });
 
-                Console.WriteLine($"Schema for table {tableName}:");
+                Console.WriteLine($"Schema for table {tableName}: {reply}");
 
                 schemas.Add(tableName, reply.QueryResults);
             }
@@ -125,21 +131,44 @@ namespace Hackathon2023
             return schemas;
         }
 
-        private async Task<string> BuildQuery(Dictionary<string, string> schemas, string userRequest)
+        private async Task<Dictionary<string, List<string>>> GetSchemas()
         {
-            var sb = new StringBuilder();
+            var schemas = new Dictionary<string, List<string>>();
 
-            sb.AppendLine("Given the following SQL tables and there schemas:");
+            var schemaQuery = @$"SELECT TABLE_NAME As tableName, COLUMN_NAME AS columnName, DATA_TYPE AS columnType
+                FROM INFORMATION_SCHEMA.COLUMNS WITH(NOLOCK);";
+
+            Console.WriteLine(schemaQuery);
+
+            var reply = await _grpcClient.ExecuteQueryAsync(
+                                new QueryRequest { InstanceName = _instanceName, DbName = _dbName, Query = schemaQuery });
+
+            Console.WriteLine($"Schema for database: {reply.QueryResults}");
+
+            schemas = JsonConvert.DeserializeObject<Dictionary<string, List<string>>>(reply.QueryResults) ?? schemas;
 
             foreach (var schema in schemas)
             {
-                sb.AppendLine($"tableName: {schema.Key} tableSchema: {schema.Value}");
+                Console.WriteLine($"Schema for table {schema.Key}: {string.Join(',',schema.Value)}");
             }
 
-            sb.AppendLine($"Convert the following free-text user request to a SYNTHACTICALY VALID SQL query and return it (return only the query without any other explenation):");
+            return schemas;
+        }
+
+        private async Task<string> BuildQuery(Dictionary<string, List<string>> schemas, string userRequest)
+        {
+            var sb = new StringBuilder();
+
+            sb.AppendLine("Given the following SQL tables and their schemas:");
+            sb.AppendLine(SchemasStr);
+
+            sb.AppendLine($"Convert the following free-text user request to a SYNTHACTICALY VALID SQL query and return it (return only the query and no further words):");
             sb.AppendLine(userRequest);
 
-            var completions = await _aiClient.GetChatCompletionsAsync(new List<(ChatRole Role, string Message)> { (ChatRole.User, sb.ToString()) }, default);
+            var finalReq = sb.ToString();
+            Console.WriteLine(finalReq);
+
+            var completions = await _aiClient.GetChatCompletionsAsync(new List<(ChatRole Role, string Message)> { (ChatRole.User, finalReq) }, default);
 
             var query = completions.Choices.FirstOrDefault()?.Message.Content;
 
@@ -177,18 +206,53 @@ namespace Hackathon2023
             return reply.QueryResults;
         }
 
+        private string StringifySchemas(Dictionary<string, List<string>> schemas)
+        {
+            var sb = new StringBuilder();
+            var schemasDict = new Dictionary<string, List<(string ColumnName, string ColumnType)>>();
+
+            var tables = schemas["tableName"];
+            var columns = schemas["columnName"];
+            var types = schemas["columnType"];
+
+            for (int i = 0; i < tables.Count(); i++)
+            {
+                if (!schemasDict.ContainsKey(tables[i]))
+                {
+                    schemasDict.Add(tables[i], new List<(string ColumnName, string ColumnType)>());
+                }
+
+                schemasDict[tables[i]].Add((columns[i], types[i]));
+            }
+
+            foreach (var schema in schemasDict)
+            {
+                sb.AppendLine($"tableName: {schema.Key}");
+                sb.AppendLine($"tableSchema: ");
+                foreach (var column in schema.Value)
+                {
+                    sb.AppendLine($"columnName: {column.ColumnName} columnType: {column.ColumnType}");
+                }
+            }
+
+            return sb.ToString();
+        }
+
         private IList<ChatMessage> GetDefaultChatInstructions()
         {
-            var combinedInstructions = $@"You are an expert in SQL and more specifically:
-                                         1. you are an expert in converting user free-text requests to the equivilent (SYNTHACTICALY VALID) SQL query
-                                         2. you are an expert in identifying and extracting SQL table names from user free-text requests.";
+            var combinedInstructions = $@"You are an expert in T-SQL and more specifically:
+                                         1. you are an expert in converting user free-text requests to the equivilent (SYNTHACTICALY VALID) SQL query";
+            var clarifications = @"IMPORTANT: Do not make up table names on your own! Only take table names from the user request!";
 
             Console.WriteLine(combinedInstructions);
 
             return new List<ChatMessage>
             {
                 new ChatMessage(ChatRole.System, combinedInstructions),
+                new ChatMessage(ChatRole.System, clarifications)
             };
         }
+
+        public string SchemasStr { get; set; } = string.Empty;
     }
 }
