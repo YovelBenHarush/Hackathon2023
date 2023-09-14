@@ -9,7 +9,7 @@ namespace Microsoft.DataSec.DspmForDatabases.Tools.HackathonScanEngineRunner
         private const int TokenLimit = 16384;
         private const int MaxResponseTokens = 1000;
 
-        private readonly string _key = "<>";
+        private readonly string _key = "30c4cbaf0970427387699605d89aca07";
         private readonly string _endpoint = "https://emeaopenai.azure-api.net/";
         private readonly string _deployment = "gpt-35-turbo-16k";
         private readonly OpenAIClient _client;

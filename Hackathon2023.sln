@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.7.34009.444
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hackathon2023", "Hackathon2023\Hackathon2023.csproj", "{727A4DF3-21E8-4015-B0FC-B68B11BA3BD7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Hackathon2023", "Hackathon2023\Hackathon2023.csproj", "{727A4DF3-21E8-4015-B0FC-B68B11BA3BD7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebApp", "WebApp\WebApp.csproj", "{5C1A6199-5701-4784-AAD3-E6EA177C7362}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{727A4DF3-21E8-4015-B0FC-B68B11BA3BD7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{727A4DF3-21E8-4015-B0FC-B68B11BA3BD7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{727A4DF3-21E8-4015-B0FC-B68B11BA3BD7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5C1A6199-5701-4784-AAD3-E6EA177C7362}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5C1A6199-5701-4784-AAD3-E6EA177C7362}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5C1A6199-5701-4784-AAD3-E6EA177C7362}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5C1A6199-5701-4784-AAD3-E6EA177C7362}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
