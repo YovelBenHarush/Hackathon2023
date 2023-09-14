@@ -15,6 +15,7 @@ namespace Hackathon2023
 
         private readonly string _instanceName;
         private readonly string _dbName;
+        private readonly string _schemasStr;
 
         private readonly VAGrpc.VAGrpcClient _grpcClient;
         private readonly AIClient _aiClient;
@@ -26,6 +27,7 @@ namespace Hackathon2023
             _aiClient = new AIClient(GetDefaultChatInstructions());
             _instanceName = instanceName;
             _dbName = dbName;
+            _schemasStr = StringifySchemas(GetSchemas().Result);
         }
 
         public async Task RunAsync()
@@ -35,11 +37,7 @@ namespace Hackathon2023
 
             Console.WriteLine("Starting...");
 
-            var schemas = await GetSchemas();
-
-            SchemasStr = StringifySchemas(schemas);
-
-            Console.WriteLine(SchemasStr);
+            Console.WriteLine(_schemasStr);
 
             do
             {
@@ -51,7 +49,7 @@ namespace Hackathon2023
                 }
                 while (userRequest == null);
 
-                var query = await BuildQuery(schemas, userRequest);
+                var query = await BuildQuery(userRequest);
 
                 if (IsQueryValid(query))
                 {
@@ -66,6 +64,30 @@ namespace Hackathon2023
                 }
             }
             while (!isSuccess);
+        }
+
+        public async Task<string> AskDB(string userRequest)
+        {
+            if (string.IsNullOrEmpty(userRequest))
+            {
+                return "Invalid user request!";
+            }
+
+            var query = await BuildQuery(userRequest);
+
+            if (IsQueryValid(query))
+            {
+                var result = await RunQuery(query);
+
+                Console.WriteLine("Query result:");
+                Console.WriteLine(result);
+
+                return result;
+            }
+            else
+            {
+                return "Invalid query generated";
+            }
         }
 
         private async Task<List<string>> ExtractTableNames(string userRequest)
@@ -155,12 +177,12 @@ namespace Hackathon2023
             return schemas;
         }
 
-        private async Task<string> BuildQuery(Dictionary<string, List<string>> schemas, string userRequest)
+        private async Task<string> BuildQuery(string userRequest)
         {
             var sb = new StringBuilder();
 
             sb.AppendLine("Given the following SQL tables and their schemas:");
-            sb.AppendLine(SchemasStr);
+            sb.AppendLine(_schemasStr);
 
             sb.AppendLine($"Convert the following free-text user request to a SYNTHACTICALY VALID SQL query and return it (return only the query and no further words):");
             sb.AppendLine(userRequest);
@@ -252,7 +274,5 @@ namespace Hackathon2023
                 new ChatMessage(ChatRole.System, clarifications)
             };
         }
-
-        public string SchemasStr { get; set; } = string.Empty;
     }
 }
