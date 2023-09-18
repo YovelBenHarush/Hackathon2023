@@ -12,6 +12,8 @@ public class Startup
             using StreamReader reader = new StreamReader(context.Request.Body);
             string body = await reader.ReadToEndAsync();
 
+            Console.WriteLine($"Got request with body: {body}");
+
             var askDBRunner = new AskDBRunner("MSSQLSERVER", "master");
             var response = await askDBRunner.AskDB(body);
             await context.Response.WriteAsync(response);
