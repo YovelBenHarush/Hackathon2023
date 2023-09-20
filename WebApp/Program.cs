@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.Extensions.Hosting;
+using System.Net;
 using System.Net.Security;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 
 public class Program
@@ -12,105 +14,51 @@ public class Program
         CreateHostBuilder(args).Build().Run();
     }
 
-    public static IHostBuilder CreateHostBuilder(string[] args) =>
-        Host.CreateDefaultBuilder(args)
-            .ConfigureWebHostDefaults(webBuilder =>
+	public static IHostBuilder CreateHostBuilder(string[] args)
+	{
+		var builder = Host.CreateDefaultBuilder(args)
+			.ConfigureWebHostDefaults(webBuilder =>
 			{
-				webBuilder.UseKestrel()
-					.UseStartup<Startup>()
-					.UseUrls("https://0.0.0.0:45678");
-				//.UseUrls("https://localhost:45678"); // Set your desired server URL here
+				webBuilder.UseStartup<Startup>().UseKestrel();
+				//.UseUrls("https://127.0.0.1:45678");
 
 				webBuilder.ConfigureKestrel(serverOptions =>
 				{
-					serverOptions.ListenAnyIP(45678, listenOptions =>
+					//serverOptions.Listen(IPAddress.Parse("10.166.113.69"), 443);
+					serverOptions.Listen(IPAddress.Loopback, 443, listenOptions => //IPAddress.Parse("10.166.113.69")
 					{
+						//listenOptions. UseHttps();
 						listenOptions.UseHttps(httpsOptions =>
 						{
-							httpsOptions.ClientCertificateMode = ClientCertificateMode.NoCertificate;
-							httpsOptions.AllowAnyClientCertificate();
+							httpsOptions.ClientCertificateMode = ClientCertificateMode.NoCertificate;// .NoCertificate;
+																										//httpsOptions.AllowAnyClientCertificate();
+							httpsOptions.CheckCertificateRevocation = false;
+							httpsOptions.SslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13;
 						});
 					});
 				});
+
+				webBuilder.ConfigureServices(services =>
+				{
+					services.AddCors(o => o.AddPolicy("MyPolicy", builder =>
+					{
+						builder.AllowAnyOrigin()
+							   .AllowAnyMethod()
+							   .AllowAnyHeader();
+					}));
+				});
 			});
 
-						
+		builder.ConfigureServices(services =>
+		{
+			services.AddCors(o => o.AddPolicy("MyPolicy", builder =>
+			{
+				builder.AllowAnyOrigin()
+					   .AllowAnyMethod()
+					   .AllowAnyHeader();
+			}));
+		});
 
-							//webBuilder.ConfigureServices<KestrelServerOptions>(options =>
-							//{
-							//	options.ConfigureHttpsDefaults(options =>
-							//		options.ClientCertificateMode = ClientCertificateMode.RequireCertificate);
-							//});
-				//webBuilder.ConfigureKestrel(serverOptions =>
-
-				//{
-
-				//	serverOptions.ListenAnyIP(45678, listenOptions =>
-
-				//	{
-
-				//		listenOptions.UseHttps(httpsOptions =>
-
-				//		{
-
-				//			var localhostCert = CertificateLoader.LoadFromStoreCert(
-
-				//				"localhost", "My", StoreLocation.CurrentUser,
-
-				//				allowInvalid: true);
-
-				//			var exampleCert = CertificateLoader.LoadFromStoreCert(
-
-				//			"10.166.113.69", "My", StoreLocation.CurrentUser,
-
-				//				allowInvalid: true);
-
-
-
-				//			listenOptions.UseHttps((stream, clientHelloInfo, state, cancellationToken) =>
-
-				//			{
-
-				//				if (string.Equals(clientHelloInfo.ServerName, "localhost",
-
-				//					StringComparison.OrdinalIgnoreCase))
-
-				//				{
-
-				//					return new ValueTask<SslServerAuthenticationOptions>(
-
-				//						new SslServerAuthenticationOptions
-
-				//						{
-
-				//							ServerCertificate = localhostCert,
-
-				//							// Different TLS requirements for this host
-
-				//							ClientCertificateRequired = true
-
-				//						});
-
-				//				}
-
-
-
-				//				return new ValueTask<SslServerAuthenticationOptions>(
-
-				//					new SslServerAuthenticationOptions
-
-				//					{
-
-				//						ServerCertificate = exampleCert
-
-				//					});
-
-				//			}, state: null!);
-
-				//		});
-
-				//	});
-
-				//});
-			//});
+		return builder;
+	}
 }

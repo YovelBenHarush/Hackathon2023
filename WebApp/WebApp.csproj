@@ -8,5 +8,8 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Hackathon2023\Hackathon2023.csproj" />
 	</ItemGroup>
+	<ItemGroup>
+	  <Folder Include="Properties\" />
+	</ItemGroup>
 
 </Project>

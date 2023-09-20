@@ -7,6 +7,10 @@ public class Startup
 {
     public void Configure(IApplicationBuilder app)
     {
+		app.UseDeveloperExceptionPage();
+
+        app.UseCors("MyPolicy");
+
         app.Run(async (context) =>
         {
             using StreamReader reader = new StreamReader(context.Request.Body);
