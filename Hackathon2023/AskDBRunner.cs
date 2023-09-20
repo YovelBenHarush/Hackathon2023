@@ -177,7 +177,7 @@ namespace Hackathon2023
             return schemas;
         }
 
-        private async Task<string> BuildQuery(string userRequest)
+        public async Task<string> BuildQuery(string userRequest)
         {
             var sb = new StringBuilder();
 
